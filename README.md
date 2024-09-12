@@ -17,21 +17,15 @@ In this work, we developed a graph representation for macromolecules. Leveraging
 ### Using the codebase
 To use the code with an Anaconda environment, follow the installation procedure here - 
 ```
-conda create -n GLAMOUR python=3.6.12
+conda create -n GLAMOUR python=3.11
 conda activate GLAMOUR
-conda install pytorch==1.7.1 cudatoolkit=10.1 -c pytorch
-conda install -c conda-forge matplotlib==3.2.2
-conda install -c rdkit rdkit==2018.09.3
-conda install -c barclayii dgl-cuda10.1
-conda install -c dglteam dgllife
-conda install captum -c pytorch
-conda install -c anaconda scikit-learn==0.23.2
-conda install -c anaconda networkx
-conda install seaborn
-conda install -c conda-forge svglib
-conda install -c conda-forge umap-learn
-conda install -c conda-forge grakel
+mamba install -c anaconda -c dglteam -c pytorch -c conda-forge pytorch=2.4 cudatoolkit matplotlib rdkit dglteam/label/th24_cu121::dgl captum scikit-learn networkx seaborn svglib umap-learn notebook
+wget https://anaconda.org/conda-forge/grakel/0.1.10/download/<os>/grakel-0.1.10-py311h<hash>_1.conda
+mamba install grakel-0.1.10-py311h<hash>_1.conda
+mamba install -c conda-forge future
+pip install dgllife
 ```
+When downloading grakel, make sure to select the correct os (e. g., `linux-64`, `win-64`, `osx-64`, ...) and the correct hash-string. It is important that it is grakel for python 3.11 ending with `_1`!
 
 If you are new to Anaconda, you can install it from [here](https://www.anaconda.com/).
 
