@@ -22,7 +22,7 @@ conda activate GLAMOUR
 conda install pytorch==1.7.1 cudatoolkit=10.1 -c pytorch
 conda install -c conda-forge matplotlib==3.2.2
 conda install -c rdkit rdkit==2018.09.3
-conda install -c dglteam dgl-cuda10.1
+conda install -c barclayii dgl-cuda10.1
 conda install -c dglteam dgllife
 conda install captum -c pytorch
 conda install -c anaconda scikit-learn==0.23.2
