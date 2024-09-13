@@ -26,7 +26,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from sklearn.metrics import auc
 
 from dgllife.utils import RandomSplitter
-
+from dgl.data.utils import Subset
 from torch.optim import Adam
 
 
@@ -128,9 +128,17 @@ class MacroSupervised():
                 
     def _split_dataset(self):
         ''' Utility function for splitting Dataset into Subsets for train, validation, and testing '''
-        train_ratio, val_ratio, test_ratio = map(float, self._split.split(','))
-        self.train_set, self.val_set, self.test_set = RandomSplitter.train_val_test_split(
-            self._dataset, frac_train=train_ratio, frac_val=val_ratio, frac_test=test_ratio, random_state=self._seed)
+        if self._dataset.split is not None:
+            indices = {"train": [], "val": [], "test": []}
+            for i, idx in enumerate(self._dataset.IDs):
+                indices[self._dataset.split[idx]].append(i)
+            self.train_set = Subset(self._dataset, indices["train"])
+            self.val_set = Subset(self._dataset, indices["val"])
+            self.test_set = Subset(self._dataset, indices["test"])
+        else:
+            train_ratio, val_ratio, test_ratio = map(float, self._split.split(','))
+            self.train_set, self.val_set, self.test_set = RandomSplitter.train_val_test_split(
+                self._dataset, frac_train=train_ratio, frac_val=val_ratio, frac_test=test_ratio, random_state=self._seed)
         
     def _load_hparams(self):
         ''' Utility function for loading default hyperparameters and updating them to reflect custom hyperparameters '''
@@ -302,11 +310,11 @@ class MacroSupervised():
         if self._dataset.task == 'classification':
             plotvals = eval_meter.compute_metric('roc_curve')
             if self._dataset.classtype == 'binary':
-                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'F1': np.mean(eval_meter.compute_metric('f1_score')), 'recall': np.mean(eval_meter.compute_metric('recall_score')), 'precision': np.mean(eval_meter.compute_metric('precision_score')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
+                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'MCC': np.mean(eval_meter.compute_metric('matthews_corrcoef')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
             elif self._dataset.classtype == 'multiclass':
-                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'F1': np.mean(eval_meter.compute_metric('f1_score')), 'recall': np.mean(eval_meter.compute_metric('recall_score')), 'precision': np.mean(eval_meter.compute_metric('precision_score')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
+                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'MCC': np.mean(eval_meter.compute_metric('matthews_corrcoef')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
             elif self._dataset.classtype == 'multilabel':
-                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'F1': np.mean(eval_meter.compute_metric('f1_score')), 'recall': np.mean(eval_meter.compute_metric('recall_score')), 'precision': np.mean(eval_meter.compute_metric('precision_score')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score')), 'hamming loss': np.mean(eval_meter.compute_metric('hamming_loss'))}
+                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'MCC': np.mean(eval_meter.compute_metric('matthews_corrcoef')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
         elif self._dataset.task == 'regression':
             plotvals = eval_meter.inverse(self._normalizer)
             metric_dict = {'rmse': np.mean(eval_meter.compute_metric('rmse')), 'L1loss': np.mean(loss_list), 'r2': np.mean(eval_meter.compute_metric('r2')), 'mae': np.mean(eval_meter.compute_metric('mae')), 'spearmanr': np.mean(eval_meter.compute_metric('spearmanr')), 'kendalltau': np.mean(eval_meter.compute_metric('kendalltau'))}
@@ -355,6 +363,9 @@ class MacroSupervised():
         stopper = Stopper_v2(savepath=self._model_path, mode='lower', patience=self._exp_config['patience'], 
                             filename=tmppath.name)
 
+        with open(self._model_path + '/metrics.csv', 'a') as f:
+            print("loss", "ROC-AUC", "MCC", "accuracy", file=f, sep=",")
+
         for epoch in range(self._num_epochs):
             self._run_a_train_epoch(epoch, model, train_loader, optimizer)
 
@@ -362,7 +373,10 @@ class MacroSupervised():
             early_stop = stopper.step(
                 val_score[list(val_score.keys())[0]], 
                 model, optimizer, self._model_name, self._save_model, self._save_opt)
-            
+
+            with open(self._model_path + '/metrics.csv', 'a') as f:
+                print(val_score["loss"], val_score["ROC-AUC"], val_score["MCC"], val_score["accuracy"], file=f, sep=",")
+
             print('epoch {:d}/{:d}, validation {} {:.4f}, best validation {} {:.4f}, '.format(
                 epoch + 1, self._num_epochs, list(val_score.keys())[0],
                 val_score[list(val_score.keys())[0]], 

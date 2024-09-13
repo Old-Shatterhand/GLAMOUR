@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn.functional as F
 
 from scipy.stats import pearsonr, spearmanr, kendalltau
-from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score, precision_recall_curve, auc, hamming_loss, roc_curve
+from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, precision_score, recall_score, precision_recall_curve, auc, hamming_loss, roc_curve, matthews_corrcoef
 
 
 class Meter_v2():
@@ -345,6 +345,13 @@ class Meter_v2():
         y_pred_numpy = torch.FloatTensor(torch.sigmoid(y_pred).numpy()) * (mask != 0).float()
         fpr, tpr, _ = roc_curve(y_true.long().numpy().ravel(), y_pred_numpy.numpy().ravel())
         return [fpr, tpr]
+
+    def matthews_corrcoef(self, reduction='none'):
+        mask, y_pred, y_true = self._finalize()
+        y_pred_numpy = torch.sigmoid(y_pred).numpy()
+        y_pred_round = torch.FloatTensor(np.around(y_pred_numpy)) * (mask != 0).float()
+        return matthews_corrcoef(y_true.long().numpy(), y_pred_round.numpy())
+
     
     def inverse(self, normalizer):
         pred_list = []
@@ -412,3 +419,5 @@ class Meter_v2():
             return self.hamming_loss(reduction)
         elif metric_name == 'roc_curve':
             return self.roc_curve(reduction)
+        elif metric_name == 'matthews_corrcoef':
+            return self.matthews_corrcoef(reduction)
