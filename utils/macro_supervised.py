@@ -10,6 +10,7 @@ import tempfile
 import dgl
 import torch
 from utils.macro_dataset import MacroDataset
+from utils.metrics_meter import Meter_v3
 from utils.stopper import Stopper_v2
 from utils.meter import Meter_v2
 from torch.utils.data import DataLoader
@@ -291,6 +292,7 @@ class MacroSupervised():
         '''
         model.eval()
         eval_meter = Meter_v2()
+        eval_metrics = Meter_v3()
         loss_list = []
         with torch.no_grad():
             for batch_id, batch_data in enumerate(data_loader):
@@ -298,6 +300,7 @@ class MacroSupervised():
                 labels, masks = labels.to(self._device), masks.to(self._device)
                 logits = self._predict(model, bg)
                 eval_meter.update(logits, labels, masks)
+                eval_metrics.update(logits, labels, masks)
                 if self._dataset.task == 'classification':
                     if self._dataset.classtype == 'multiclass':
                         losslabels = torch.max(labels, 1)[1]
@@ -310,11 +313,11 @@ class MacroSupervised():
         if self._dataset.task == 'classification':
             plotvals = eval_meter.compute_metric('roc_curve')
             if self._dataset.classtype == 'binary':
-                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'MCC': np.mean(eval_meter.compute_metric('matthews_corrcoef')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
+                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': np.mean(eval_metrics.compute_metric('auroc')), 'val/MatthewsCorrCoef': np.mean(eval_metrics.compute_metric('matthews_corrcoef')), 'val/Accuracy': np.mean(eval_metrics.compute_metric('accuracy'))}
             elif self._dataset.classtype == 'multiclass':
-                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'MCC': np.mean(eval_meter.compute_metric('matthews_corrcoef')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
+                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': np.mean(eval_metrics.compute_metric('auroc')), 'val/MatthewsCorrCoef': np.mean(eval_metrics.compute_metric('matthews_corrcoef')), 'val/Accuracy': np.mean(eval_metrics.compute_metric('accuracy'))}
             elif self._dataset.classtype == 'multilabel':
-                metric_dict = {'loss': np.mean(loss_list), 'ROC-AUC': np.mean(eval_meter.compute_metric('roc_auc_score')), 'MCC': np.mean(eval_meter.compute_metric('matthews_corrcoef')), 'accuracy': np.mean(eval_meter.compute_metric('accuracy_score'))}
+                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': np.mean(eval_metrics.compute_metric('auroc')), 'val/MatthewsCorrCoef': np.mean(eval_metrics.compute_metric('matthews_corrcoef')), 'val/Accuracy': np.mean(eval_metrics.compute_metric('accuracy'))}
         elif self._dataset.task == 'regression':
             plotvals = eval_meter.inverse(self._normalizer)
             metric_dict = {'rmse': np.mean(eval_meter.compute_metric('rmse')), 'L1loss': np.mean(loss_list), 'r2': np.mean(eval_meter.compute_metric('r2')), 'mae': np.mean(eval_meter.compute_metric('mae')), 'spearmanr': np.mean(eval_meter.compute_metric('spearmanr')), 'kendalltau': np.mean(eval_meter.compute_metric('kendalltau'))}
@@ -364,7 +367,7 @@ class MacroSupervised():
                             filename=tmppath.name)
 
         with open(self._model_path + '/metrics.csv', 'a') as f:
-            print("loss", "ROC-AUC", "MCC", "accuracy", file=f, sep=",")
+            print("loss", "val/AUROC", "val/MatthewsCorrCoef", "val/Accuracy", file=f, sep=",")
 
         for epoch in range(self._num_epochs):
             self._run_a_train_epoch(epoch, model, train_loader, optimizer)
@@ -375,7 +378,7 @@ class MacroSupervised():
                 model, optimizer, self._model_name, self._save_model, self._save_opt)
 
             with open(self._model_path + '/metrics.csv', 'a') as f:
-                print(val_score["loss"], val_score["ROC-AUC"], val_score["MCC"], val_score["accuracy"], file=f, sep=",")
+                print(val_score["loss"], val_score["val/AUROC"], val_score["val/MatthewsCorrCoef"], val_score["val/Accuracy"], file=f, sep=",")
 
             print('epoch {:d}/{:d}, validation {} {:.4f}, best validation {} {:.4f}, '.format(
                 epoch + 1, self._num_epochs, list(val_score.keys())[0],
