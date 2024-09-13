@@ -4,7 +4,7 @@ import torchmetrics
 
 
 class Meter_v3:
-    def __init__(self, mean=None, std=None):
+    def __init__(self, mean=None, std=None, task=None, num_classes=None):
         '''
         Initializes a Meter_v2 object
 
@@ -16,6 +16,8 @@ class Meter_v3:
         self._mask = []
         self.y_pred = []
         self.y_true = []
+        self.task = task
+        self.num_classes = num_classes
 
         if (mean is not None) and (std is not None):
             self._mean = mean.cpu()
@@ -67,19 +69,27 @@ class Meter_v3:
         metric : float, computed metric
         '''
         mask, y_pred, y_true = self._finalize()
+        args = {"task": self.task}
+        if self.task == "multilabel":
+            args["num_labels"] = self.num_classes
+        elif self.task == "multiclass" or self.task == "binary":
+            args["num_classes"] = self.num_classes
+        if self.task != "regression":
+            y_true = y_true.long()
+
         if metric_name == 'mae':
-            return torchmetrics.functional.mean_absolute_error(y_true, y_pred)
+            return torchmetrics.functional.mean_absolute_error(y_true, y_pred).item()
         elif metric_name == 'rmse':
-            return torchmetrics.functional.mean_squared_error(y_true, y_pred).sqrt()
+            return torchmetrics.functional.mean_squared_error(y_true, y_pred).sqrt().item()
         elif metric_name == 'mse':
-            return torchmetrics.functional.mean_squared_error(y_true, y_pred)
+            return torchmetrics.functional.mean_squared_error(y_true, y_pred).item()
         elif metric_name == 'r2':
-            return torchmetrics.functional.r2_score(y_true, y_pred)
+            return torchmetrics.functional.r2_score(y_true, y_pred).item()
         elif metric_name == 'auroc':
-            return torchmetrics.functional.auroc(y_pred, y_true)
+            return torchmetrics.functional.auroc(y_pred, y_true, **args).item()
         elif metric_name == 'matthews_corrcoef':
-            return torchmetrics.functional.matthews_corrcoef(y_pred, y_true)
+            return torchmetrics.functional.matthews_corrcoef(y_pred, y_true, **args).item()
         elif metric_name == 'accuracy':
-            return torchmetrics.functional.accuracy(y_pred, y_true)
+            return torchmetrics.functional.accuracy(y_pred, y_true, **args).item()
         else:
             raise ValueError(f'Unsupported metric: {metric_name}')

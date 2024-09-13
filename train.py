@@ -20,6 +20,8 @@ NORM = "qt"
 
 
 def train(base: Path, label_name: str, model_name: Literal["GCN", "GAT", "Weave", "MPNN", "AttentiveFP"]):
+    if "," in label_name:
+        label_name = label_name.split(",")
     mono_file = base / "monos.txt"
     bond_file = base / "bonds.txt"
     graph_path = base / "graphs"

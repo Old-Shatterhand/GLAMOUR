@@ -292,7 +292,7 @@ class MacroSupervised():
         '''
         model.eval()
         eval_meter = Meter_v2()
-        eval_metrics = Meter_v3()
+        eval_metrics = Meter_v3(task=self._dataset.classtype, num_classes=self._dataset.n_tasks)
         loss_list = []
         with torch.no_grad():
             for batch_id, batch_data in enumerate(data_loader):
@@ -313,11 +313,11 @@ class MacroSupervised():
         if self._dataset.task == 'classification':
             plotvals = eval_meter.compute_metric('roc_curve')
             if self._dataset.classtype == 'binary':
-                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': np.mean(eval_metrics.compute_metric('auroc')), 'val/MatthewsCorrCoef': np.mean(eval_metrics.compute_metric('matthews_corrcoef')), 'val/Accuracy': np.mean(eval_metrics.compute_metric('accuracy'))}
+                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': eval_metrics.compute_metric('auroc'), 'val/MatthewsCorrCoef': eval_metrics.compute_metric('matthews_corrcoef'), 'val/Accuracy': eval_metrics.compute_metric('accuracy')}
             elif self._dataset.classtype == 'multiclass':
-                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': np.mean(eval_metrics.compute_metric('auroc')), 'val/MatthewsCorrCoef': np.mean(eval_metrics.compute_metric('matthews_corrcoef')), 'val/Accuracy': np.mean(eval_metrics.compute_metric('accuracy'))}
+                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': eval_metrics.compute_metric('auroc'), 'val/MatthewsCorrCoef': eval_metrics.compute_metric('matthews_corrcoef'), 'val/Accuracy': eval_metrics.compute_metric('accuracy')}
             elif self._dataset.classtype == 'multilabel':
-                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': np.mean(eval_metrics.compute_metric('auroc')), 'val/MatthewsCorrCoef': np.mean(eval_metrics.compute_metric('matthews_corrcoef')), 'val/Accuracy': np.mean(eval_metrics.compute_metric('accuracy'))}
+                metric_dict = {'loss': np.mean(loss_list), 'val/AUROC': eval_metrics.compute_metric('auroc'), 'val/MatthewsCorrCoef': eval_metrics.compute_metric('matthews_corrcoef'), 'val/Accuracy': eval_metrics.compute_metric('accuracy')}
         elif self._dataset.task == 'regression':
             plotvals = eval_meter.inverse(self._normalizer)
             metric_dict = {'rmse': np.mean(eval_meter.compute_metric('rmse')), 'L1loss': np.mean(loss_list), 'r2': np.mean(eval_meter.compute_metric('r2')), 'mae': np.mean(eval_meter.compute_metric('mae')), 'spearmanr': np.mean(eval_meter.compute_metric('spearmanr')), 'kendalltau': np.mean(eval_meter.compute_metric('kendalltau'))}
