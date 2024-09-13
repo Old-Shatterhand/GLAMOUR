@@ -52,12 +52,22 @@ class MacroDataset():
             if str(idnum) in self._nx_graphs.keys():
                 self.IDs.append(idnum)
                 graphs_feat.append(self._nx_graphs[str(idnum)])
-            
+        # print(self.IDs[83])
+        # print(graphs_feat[83].nodes[0])
+        # print(self.IDs[84])
+        # print(graphs_feat[84].nodes[0])
         if self._model == 'GCN' or self._model == 'GAT':
             graphs_list = [dgl.from_networkx(graph_feat, node_attrs=['h'], edge_attrs=['e'], idtype=torch.int32) for graph_feat in graphs_feat]
             self.graphs = [dgl.add_self_loop(graph) for graph in graphs_list]
         else:
-            self.graphs = [dgl.from_networkx(graph_feat, node_attrs=['h'], edge_attrs=['e'], idtype=torch.int32) for graph_feat in graphs_feat]
+            self.graphs = []
+            for i, graph_feat in enumerate(graphs_feat):
+                if len(graph_feat.nodes) == 1:
+                    self.graphs.append(dgl.from_networkx(graph_feat, node_attrs=['h'], idtype=torch.int32))
+                else:
+                    self.graphs.append(dgl.from_networkx(graph_feat, node_attrs=['h'], edge_attrs=['e'], idtype=torch.int32))
+                # print(i)
+                
         
         if self.task == 'classification':
             self._classificationlabel()
