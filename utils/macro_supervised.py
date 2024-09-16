@@ -83,7 +83,7 @@ class MacroSupervised():
         self._normalizer = self._dataset.normalizer
         
         if torch.cuda.is_available():
-            self._device = torch.device('cuda')
+            self._device = torch.device('cuda:1')
         else:
             self._device = torch.device('cpu')
         
@@ -356,6 +356,10 @@ class MacroSupervised():
         
         self.model_load = self._load_model()
         model = self.model_load.to(self._device)
+
+        if self._save_config == True:
+            with open(self._model_path + '/configure.json', 'w') as f:
+                json.dump(self._exp_config, f, indent=2)
         
         if self._model_path == None:
             tmp_dir = tempfile.mkdtemp()
@@ -409,10 +413,6 @@ class MacroSupervised():
             list(self._test_score.keys())[num], self._test_score[list(self._test_score.keys())[num]]) for num in 
                         range(0,len(list(self._test_score.keys())))))
     
-        if self._save_config == True:
-            with open(self._model_path + '/configure.json', 'w') as f:
-                json.dump(self._exp_config, f, indent=2)
-        
         print('\nBest Validation Metrics:')
         print('\n'.join('{} {:.4f}'.format(
             list(self._best_val_score.keys())[num], self._best_val_score[list(self._best_val_score.keys())[num]]) for num in

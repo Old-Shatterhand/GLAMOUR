@@ -89,7 +89,7 @@ def train(base: Path, label_name: str, model_name: Literal["GCN", "GAT", "Weave"
         SPLIT="0.6,0.2,0.2",  # going to be ignored
         NUM_EPOCHS=100,
         NUM_WORKERS=16,
-        CUSTOM_PARAMS={},  # params,
+        CUSTOM_PARAMS=params,
         MODEL_PATH=str(version),
         SAVE_MODEL=True,
         SAVE_OPT=True,
