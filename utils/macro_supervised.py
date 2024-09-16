@@ -154,6 +154,7 @@ class MacroSupervised():
         Returns:
         model: dgllife model, Predictor with set hyperparameters
         '''
+        print(self._exp_config)
         if self._model_name == 'GCN':
             from dgllife.model import GCNPredictor
             model = GCNPredictor(
@@ -214,6 +215,7 @@ class MacroSupervised():
                 dropout=self._exp_config['dropout'],
                 n_tasks=self._exp_config['n_tasks']
             )
+        print("Number of trainable parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
         return model
     
     def _collate_molgraphs(self, data):

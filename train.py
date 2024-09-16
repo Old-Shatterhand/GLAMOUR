@@ -14,7 +14,7 @@ FEAT = 'fp'
 FP_RADIUS_MON = 3
 FP_BITS_MON = 128
 FP_RADIUS_BOND = 3
-FP_BITS_BOND = 16
+FP_BITS_BOND = 128
 SEED = 42
 NORM = "qt"
 
@@ -25,10 +25,10 @@ def train(base: Path, label_name: str, model_name: Literal["GCN", "GAT", "Weave"
     mono_file = base / "monos.txt"
     bond_file = base / "bonds.txt"
     graph_path = base / "graphs"
-    if "taxonomy" in str(base):
-        df_path = base / "multilabel.txt"
-    else:
-        df_path = base / "classificaion.txt"
+    # if "taxonomy" in str(base):
+    df_path = base / "multilabel.txt"
+    # else:
+    #     df_path = base / "classificaion.txt"
 
     graphs = networkx_feat(
         TXT_DATA_PATH=graph_path,
@@ -58,6 +58,24 @@ def train(base: Path, label_name: str, model_name: Literal["GCN", "GAT", "Weave"
         version = base / f"version_{max(vs) + 1}"
     else:
         version = base / "version_0"
+    
+    if model_name == "MPNN":
+        dims = 256
+    else:
+        dims = 512
+    params = {
+            "gnn_hidden_feats": 1024 if model_name == "GCN" else dims, 
+            "predictor_hidden_feats": 512, 
+            "num_gnn_layers": 8, 
+            "graph_feats": 1024 if model_name == "GCN" else dims, 
+            "node_out_feats": 1024 if model_name == "GCN" else dims, 
+            "edge_hidden_feats": 1024 if model_name == "GCN" else dims, 
+            "num_step_message_passing": 8, 
+            "num_step_set2set": 1, 
+            "num_layer_set2set": 1, 
+            "num_layers": 8, 
+            "graph_feat_size": 512,
+    }
 
     macro_supervised = MacroSupervised(
         MacroDataset=dataset,
@@ -71,7 +89,7 @@ def train(base: Path, label_name: str, model_name: Literal["GCN", "GAT", "Weave"
         SPLIT="0.6,0.2,0.2",  # going to be ignored
         NUM_EPOCHS=100,
         NUM_WORKERS=16,
-        CUSTOM_PARAMS={},
+        CUSTOM_PARAMS={},  # params,
         MODEL_PATH=str(version),
         SAVE_MODEL=True,
         SAVE_OPT=True,
